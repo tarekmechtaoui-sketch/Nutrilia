@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react'
 import { supabase } from './supabaseClient'
+import { useLang } from './useLang'
 import wilayas from '../WILAYA/Wilaya_Of_Algeria.json'
 import communes from '../WILAYA/Commune_Of_Algeria.json'
 
 const UNIT_PRICE = 4500 // DA per unit
+
+const LANG_LABELS = { en: 'EN', fr: 'FR', ar: 'ع' }
 
 function Toothbrush({ tone = 'mint', className = '' }) {
   const colors =
@@ -40,8 +43,9 @@ function Field({ label, children, hint }) {
 }
 
 export default function App() {
+  const { lang, setLang, t, isRtl } = useLang()
   const [form, setForm] = useState({ name: '', phone: '', wilaya: '', commune: '', quantity: 1, deliveryType: 'home' })
-  const [status, setStatus] = useState('idle') // idle | loading | success | error
+  const [status, setStatus] = useState('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
   const total = form.quantity * UNIT_PRICE
@@ -63,7 +67,7 @@ export default function App() {
     e.preventDefault()
     if (!form.name.trim() || !form.phone.trim()) {
       setStatus('error')
-      setErrorMsg('Please fill in your name and phone number.')
+      setErrorMsg(t('fillRequired'))
       return
     }
     setStatus('loading')
@@ -82,7 +86,7 @@ export default function App() {
 
     if (error) {
       setStatus('error')
-      setErrorMsg(error.message || 'Something went wrong. Please try again.')
+      setErrorMsg(error.message || t('somethingWrong'))
       return
     }
 
@@ -91,17 +95,32 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
+    <div className={`min-h-screen overflow-x-hidden ${isRtl ? 'font-arabic' : ''}`}>
       {/* NAV */}
       <header className="sticky top-0 z-30 border-b border-ink/5 bg-sand-light/80 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <span className="font-display text-2xl italic tracking-tight text-ink">Sona</span>
-          <a
-            href="#order"
-            className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-sand-light transition hover:bg-ink/85"
-          >
-            Order now
-          </a>
+          <div className="flex items-center gap-3">
+            <div className="flex rounded-full border border-ink/10 bg-white/60 p-0.5">
+              {['en', 'fr', 'ar'].map((l) => (
+                <button
+                  key={l}
+                  onClick={() => setLang(l)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                    lang === l ? 'bg-ink text-sand-light' : 'text-ink/50 hover:text-ink'
+                  }`}
+                >
+                  {LANG_LABELS[l]}
+                </button>
+              ))}
+            </div>
+            <a
+              href="#order"
+              className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-sand-light transition hover:bg-ink/85"
+            >
+              {t('orderNow')}
+            </a>
+          </div>
         </div>
       </header>
 
@@ -120,20 +139,20 @@ export default function App() {
         <div className="mx-auto grid max-w-6xl items-center gap-10 px-6 pb-16 pt-14 md:grid-cols-2 md:pb-24 md:pt-20">
           <div className="relative z-10">
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-ink/50">
-              Sonic toothbrush
+              {t('sonicToothbrush')}
             </p>
             <h1 className="font-display text-5xl leading-[1.05] text-ink md:text-6xl">
-              A gentler <em className="italic text-mint-dark">kind</em> of clean.
+              {t('heroTitle1')} <em className="italic text-mint-dark">{t('heroTitle2')}</em> {t('heroTitle3')}
             </h1>
             <p className="mt-5 max-w-md text-base text-ink/65 md:text-lg">
-              Soft sonic vibrations, two color ways, one charge that lasts for weeks.
+              {t('heroDesc')}
             </p>
             <div className="mt-8 flex items-center gap-4">
               <a
                 href="#order"
                 className="rounded-full bg-ink px-7 py-3.5 text-sm font-semibold text-sand-light shadow-lg shadow-ink/10 transition hover:-translate-y-0.5 hover:bg-ink/85"
               >
-                Order now — {UNIT_PRICE.toLocaleString()} DA
+                {t('orderCta', { price: UNIT_PRICE.toLocaleString() })}
               </a>
             </div>
           </div>
@@ -149,13 +168,13 @@ export default function App() {
       <section className="mx-auto max-w-6xl px-6 py-16 md:py-20">
         <div className="grid gap-8 sm:grid-cols-3">
           {[
-            { title: 'Sonic clean', desc: '40,000 gentle strokes a minute.' },
-            { title: '30-day battery', desc: 'One charge, weeks of use.' },
-            { title: 'Soft-touch heads', desc: 'Kind to gums, tough on plaque.' },
+            { titleKey: 'feature1Title', descKey: 'feature1Desc' },
+            { titleKey: 'feature2Title', descKey: 'feature2Desc' },
+            { titleKey: 'feature3Title', descKey: 'feature3Desc' },
           ].map((f) => (
-            <div key={f.title} className="rounded-3xl bg-white/60 p-6">
-              <h3 className="font-display text-xl text-ink">{f.title}</h3>
-              <p className="mt-1.5 text-sm text-ink/60">{f.desc}</p>
+            <div key={f.titleKey} className="rounded-3xl bg-white/60 p-6">
+              <h3 className="font-display text-xl text-ink">{t(f.titleKey)}</h3>
+              <p className="mt-1.5 text-sm text-ink/60">{t(f.descKey)}</p>
             </div>
           ))}
         </div>
@@ -170,21 +189,21 @@ export default function App() {
         />
         <div className="mx-auto max-w-lg">
           <div className="mb-8 text-center">
-            <h2 className="font-display text-3xl text-ink md:text-4xl">Reserve yours</h2>
-            <p className="mt-2 text-sm text-ink/60">Cash on delivery. We'll call to confirm.</p>
+            <h2 className="font-display text-3xl text-ink md:text-4xl">{t('reserveYours')}</h2>
+            <p className="mt-2 text-sm text-ink/60">{t('cashOnDelivery')}</p>
           </div>
 
           {status === 'success' ? (
             <div className="rounded-3xl bg-white p-8 text-center shadow-sm">
-              <p className="font-display text-2xl text-mint-dark">Order received</p>
+              <p className="font-display text-2xl text-mint-dark">{t('orderReceived')}</p>
               <p className="mt-2 text-sm text-ink/60">
-                Thanks — we'll reach out shortly to confirm delivery.
+                {t('orderSuccess')}
               </p>
               <button
                 onClick={() => setStatus('idle')}
                 className="mt-6 rounded-full border border-ink/15 px-5 py-2 text-sm font-medium text-ink/70 transition hover:bg-ink/5"
               >
-                Place another order
+                {t('placeAnother')}
               </button>
             </div>
           ) : (
@@ -192,29 +211,29 @@ export default function App() {
               onSubmit={handleSubmit}
               className="space-y-5 rounded-3xl bg-white p-8 shadow-sm shadow-ink/5"
             >
-              <Field label="Full name">
+              <Field label={t('fullName')}>
                 <input
                   type="text"
                   value={form.name}
                   onChange={(e) => update('name', e.target.value)}
-                  placeholder="Jane Doe"
+                  placeholder={t('fullNamePlaceholder')}
                   className="mt-1.5 w-full rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark"
                   required
                 />
               </Field>
 
-              <Field label="Phone number">
+              <Field label={t('phone')}>
                 <input
                   type="tel"
                   value={form.phone}
                   onChange={(e) => update('phone', e.target.value)}
-                  placeholder="0555 12 34 56"
+                  placeholder={t('phonePlaceholder')}
                   className="mt-1.5 w-full rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark"
                   required
                 />
               </Field>
 
-              <Field label="Wilaya">
+              <Field label={t('wilaya')}>
                 <select
                   value={form.wilaya}
                   onChange={(e) => {
@@ -224,16 +243,16 @@ export default function App() {
                   className="mt-1.5 w-full rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark"
                   required
                 >
-                  <option value="">Select wilaya</option>
+                  <option value="">{t('selectWilaya')}</option>
                   {wilayas.map((w) => (
                     <option key={w.id} value={w.id}>
-                      {w.code} — {w.name}
+                      {w.code} — {lang === 'ar' ? w.ar_name : w.name}
                     </option>
                   ))}
                 </select>
               </Field>
 
-              <Field label="Commune">
+              <Field label={t('commune')}>
                 <select
                   value={form.commune}
                   onChange={(e) => update('commune', e.target.value)}
@@ -241,16 +260,16 @@ export default function App() {
                   className="mt-1.5 w-full rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark disabled:opacity-40"
                   required
                 >
-                  <option value="">{form.wilaya ? 'Select commune' : 'Pick a wilaya first'}</option>
+                  <option value="">{form.wilaya ? t('selectCommune') : t('pickWilaya')}</option>
                   {filteredCommunes.map((c) => (
-                    <option key={c.id} value={c.name}>
-                      {c.name}
+                    <option key={c.id} value={lang === 'ar' ? c.ar_name : c.name}>
+                      {lang === 'ar' ? c.ar_name : c.name}
                     </option>
                   ))}
                 </select>
               </Field>
 
-              <Field label="Quantity">
+              <Field label={t('quantity')}>
                 <div className="mt-1.5 flex w-fit items-center rounded-xl border border-ink/10 bg-sand-light/40">
                   <button
                     type="button"
@@ -274,11 +293,11 @@ export default function App() {
                 </div>
               </Field>
 
-              <Field label="Delivery type">
+              <Field label={t('deliveryType')}>
                 <div className="mt-1.5 space-y-2">
                   {[
-                    { value: 'home', label: 'Home delivery', sub: 'Delivered to your door' },
-                    { value: 'desk', label: 'Office / desk', sub: 'Delivered to your workplace' },
+                    { value: 'home', labelKey: 'homeDelivery', subKey: 'homeDeliverySub' },
+                    { value: 'desk', labelKey: 'officeDesk', subKey: 'officeDeskSub' },
                   ].map((opt) => (
                     <label
                       key={opt.value}
@@ -288,6 +307,14 @@ export default function App() {
                           : 'border-ink/10 bg-sand-light/40 hover:border-ink/20'
                       }`}
                     >
+                      <input
+                        type="radio"
+                        name="deliveryType"
+                        value={opt.value}
+                        checked={form.deliveryType === opt.value}
+                        onChange={() => update('deliveryType', opt.value)}
+                        className="sr-only"
+                      />
                       <div className="flex items-center gap-3">
                         <div
                           className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
@@ -301,12 +328,12 @@ export default function App() {
                           )}
                         </div>
                         <div>
-                          <span className="text-sm font-medium text-ink">{opt.label}</span>
-                          <span className="ml-2 text-xs text-ink/40">{opt.sub}</span>
+                          <span className="text-sm font-medium text-ink">{t(opt.labelKey)}</span>
+                          <span className="ml-2 text-xs text-ink/40">{t(opt.subKey)}</span>
                         </div>
                       </div>
                       <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
-                        Free
+                        {t('free')}
                       </span>
                     </label>
                   ))}
@@ -314,7 +341,7 @@ export default function App() {
               </Field>
 
               <div className="flex items-center justify-between border-t border-ink/10 pt-4">
-                <span className="text-sm font-medium text-ink/60">Total</span>
+                <span className="text-sm font-medium text-ink/60">{t('total')}</span>
                 <span className="font-display text-2xl text-ink">
                   {total.toLocaleString()} DA
                 </span>
@@ -331,7 +358,7 @@ export default function App() {
                 disabled={status === 'loading'}
                 className="w-full rounded-full bg-ink py-3.5 text-sm font-semibold text-sand-light transition hover:bg-ink/85 disabled:opacity-50"
               >
-                {status === 'loading' ? 'Placing order…' : 'Confirm order'}
+                {status === 'loading' ? t('placingOrder') : t('confirmOrder')}
               </button>
             </form>
           )}
@@ -339,7 +366,7 @@ export default function App() {
       </section>
 
       <footer className="border-t border-ink/5 bg-sand-light px-6 py-8 text-center text-xs text-ink/40">
-        © {new Date().getFullYear()} Sona. All rights reserved.
+        {t('copyright', { year: new Date().getFullYear() })}
       </footer>
     </div>
   )
