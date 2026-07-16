@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { supabase } from './supabaseClient'
+import wilayas from '../WILAYA/Wilaya_Of_Algeria.json'
+import communes from '../WILAYA/Commune_Of_Algeria.json'
 
 const UNIT_PRICE = 4500 // DA per unit
 
@@ -38,11 +40,16 @@ function Field({ label, children, hint }) {
 }
 
 export default function App() {
-  const [form, setForm] = useState({ name: '', phone: '', address: '', quantity: 1 })
+  const [form, setForm] = useState({ name: '', phone: '', wilaya: '', commune: '', quantity: 1, deliveryType: 'home' })
   const [status, setStatus] = useState('idle') // idle | loading | success | error
   const [errorMsg, setErrorMsg] = useState('')
 
   const total = form.quantity * UNIT_PRICE
+
+  const filteredCommunes = useMemo(() => {
+    if (!form.wilaya) return []
+    return communes.filter((c) => c.wilaya_id === form.wilaya)
+  }, [form.wilaya])
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }))
@@ -65,9 +72,12 @@ export default function App() {
     const { error } = await supabase.from('landingpages').insert({
       customer_name: form.name.trim(),
       phone: form.phone.trim(),
-      address: form.address.trim() || null,
+      address: form.commune && form.wilaya
+        ? `${form.commune}, ${wilayas.find((w) => w.id === form.wilaya)?.name || ''}`
+        : null,
       total,
       status: 'pending',
+      delivery_type: form.deliveryType,
     })
 
     if (error) {
@@ -77,7 +87,7 @@ export default function App() {
     }
 
     setStatus('success')
-    setForm({ name: '', phone: '', address: '', quantity: 1 })
+    setForm({ name: '', phone: '', wilaya: '', commune: '', quantity: 1, deliveryType: 'home' })
   }
 
   return (
@@ -204,14 +214,40 @@ export default function App() {
                 />
               </Field>
 
-              <Field label="Delivery address">
-                <textarea
-                  value={form.address}
-                  onChange={(e) => update('address', e.target.value)}
-                  placeholder="Street, city, wilaya"
-                  rows={2}
-                  className="mt-1.5 w-full resize-none rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark"
-                />
+              <Field label="Wilaya">
+                <select
+                  value={form.wilaya}
+                  onChange={(e) => {
+                    update('wilaya', e.target.value)
+                    update('commune', '')
+                  }}
+                  className="mt-1.5 w-full rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark"
+                  required
+                >
+                  <option value="">Select wilaya</option>
+                  {wilayas.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.code} — {w.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+
+              <Field label="Commune">
+                <select
+                  value={form.commune}
+                  onChange={(e) => update('commune', e.target.value)}
+                  disabled={!form.wilaya}
+                  className="mt-1.5 w-full rounded-xl border border-ink/10 bg-sand-light/40 px-4 py-3 text-sm text-ink outline-none transition focus:border-mint-dark disabled:opacity-40"
+                  required
+                >
+                  <option value="">{form.wilaya ? 'Select commune' : 'Pick a wilaya first'}</option>
+                  {filteredCommunes.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               </Field>
 
               <Field label="Quantity">
@@ -235,6 +271,45 @@ export default function App() {
                   >
                     +
                   </button>
+                </div>
+              </Field>
+
+              <Field label="Delivery type">
+                <div className="mt-1.5 space-y-2">
+                  {[
+                    { value: 'home', label: 'Home delivery', sub: 'Delivered to your door' },
+                    { value: 'desk', label: 'Office / desk', sub: 'Delivered to your workplace' },
+                  ].map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border px-4 py-3 transition ${
+                        form.deliveryType === opt.value
+                          ? 'border-mint-dark bg-mint-light/40'
+                          : 'border-ink/10 bg-sand-light/40 hover:border-ink/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`flex h-4 w-4 items-center justify-center rounded-full border-2 ${
+                            form.deliveryType === opt.value
+                              ? 'border-mint-dark'
+                              : 'border-ink/20'
+                          }`}
+                        >
+                          {form.deliveryType === opt.value && (
+                            <div className="h-2 w-2 rounded-full bg-mint-dark" />
+                          )}
+                        </div>
+                        <div>
+                          <span className="text-sm font-medium text-ink">{opt.label}</span>
+                          <span className="ml-2 text-xs text-ink/40">{opt.sub}</span>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                        Free
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </Field>
 

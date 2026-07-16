@@ -147,6 +147,7 @@ export default function Admin() {
                   <th className="px-5 py-3">Customer</th>
                   <th className="px-5 py-3">Phone</th>
                   <th className="px-5 py-3">Address</th>
+                  <th className="px-5 py-3">Delivery</th>
                   <th className="px-5 py-3 text-right">Total</th>
                   <th className="px-5 py-3">Date</th>
                   <th className="px-5 py-3">Status</th>
@@ -164,6 +165,11 @@ export default function Admin() {
                     <td className="px-5 py-3.5 text-ink/70">{order.phone}</td>
                     <td className="max-w-[200px] truncate px-5 py-3.5 text-ink/50">
                       {order.address || '—'}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                        {order.delivery_type === 'desk' ? 'Office / desk' : 'Home delivery'} · Free
+                      </span>
                     </td>
                     <td className="px-5 py-3.5 text-right font-medium text-ink">
                       {order.total?.toLocaleString()} DA
